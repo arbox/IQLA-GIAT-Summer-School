@@ -1,0 +1,529 @@
+# Introduction to Programming with R
+
+## Table of Contents
+
+* [RStudio IDE](#rstudio-ide)
+* [Installation of R Packages](#installation-of-r-packages)
+* [R Datastructures](#r-datastructures)
+* [Data Manipulation](#data-manipulation)
+* [Descriptive Statistics](#descriptive-statistics)
+* [Graphical Exploration](#graphical-exploration)
+* [String Processing with R](#strings)
+* [Mathematical operations](#math)
+* [User-defined functions](#user-defined-functions)
+* [Flow control structures](#flow-control)
+* [Apply-family functions](#apply-family-functions)
+* [Next steps](#further-readings)
+
+## RStudio IDE
+[RStudio](https://www.rstudio.com/) is an advanced IDE for the R programming language, web development with [Shiny](http://shiny.rstudio.com/),
+literate scientific programming and authoring rich data presentations.
+
+Let's look at this masterpiece!
+
+### Getting help
+Two very first useful commands are `?` (search) and `??` (fuzzy search).
+
+```{r, eval = FALSE}
+?plot
+??ggplot2
+help(plot)
+```
+
+### Current working directory
+
+```{r, eval = FALSE}
+getwd()
+
+# setwd('some/path')
+```
+
+You can use the `Session` menu to manipulate the path to the working directory.
+
+### Closing notes
+`RStudio` isn't the only way to work within an R environment (also it's admittedly a very convenient one).
+Other options could be:
+
+- plain R console;
+- RCommander (the package `rcmdr`);
+- ESS (for Emacs users);
+- Tinn-R.
+
+This list isn't an exhaustive one, look please at http://www.sciviews.org/_rgui/.
+
+## Installation of R Packages
+
+During both sessions we'll need some additional libraries. R is a very powerful language, but the real
+power comes from reusing ready code from so called "packages".
+
+Required packages are:
+
+- `ggplot2` -- a modern plotting infrastructure;
+- `tm` -- term matrix;
+- `Matrix` -- sparse matrix representation;
+- `topicmodels` -- LDA models;
+- `wordcloud` -- graphical representation of word-clouds;
+- `gtools` -- R addendum to standard functions;
+- `moments` -- useful descriptive statisctics;
+- `car` -- companion to applied regression;
+- `caret` -- classification and regression training;
+- `glmnet` -- generalized linear models.
+
+```{r}
+libraries <- c('ggplot2', 'tm', 'Matrix', 'topicmodels', 'wordcloud', 'gtools', 'moments', 'car', 'caret', 'glmnet')
+
+missing_libraries <- libraries[!(libraries %in% installed.packages()[, 'Package'])]
+
+if (length(missing_libraries) > 0) {
+  install.packages(missing_libraries, repos = 'http://cran.rstudio.com/')
+}
+```
+
+Before we can use a library, we have to express our wish to do so:
+
+```{r, eval = FALSE}
+library(ggplot2)
+```
+
+This should be done only once for each required package.
+
+### Closing notes
+We can use the `Packages` menu for installing additional libraries.
+
+A modern approach to manage all project dependencies is a package manager. In the R ecosystem it is
+[Packrat](http://rstudio.github.io/packrat/).
+
+## <a name="r-datastructures"></a>Basic datastructures in R
+`R` has a specialization in processing collections of values. That's why we cannot find any `scalar`
+built in data structure. Every data structure is considered a collection even if it contains only
+one value.
+
+### Vectors
+A primary data structure is a vector: a collection of values of the `same` type.
+
+Which types are built in:
+
+- integer
+- double
+- logical
+- character
+- list
+- etc.
+
+```{r, eval = FALSE}
+v1 <- c(18.3, 19.4, 18.5, 17.2, 22.5, 17.8, 23.4)
+typeof(v1)
+is.vector(v1)
+```
+
+We can access different elements of our vector:
+```{r, eval = FALSE}
+v1[1]
+v1[-3]
+v1[c(2, 3, 5)]
+v1[c(T, T, T, F, F, T, T)]
+```
+
+We can compare different vectors:
+```{r, eval = FALSE}
+1 < 2
+
+v2 <- seq(14, 20, by = 2)
+
+v3 <- 14:17
+
+v2 < v3
+```
+
+### Lists
+Lists are in R data-structures for storing heterogeneous data of (possibly) different length.
+
+```{r, eval = FALSE}
+l1 <- as.list(v1)
+l2 <- list(c(1, 2, 3, 4), c('a', 'b', 'c', 'd'))
+is.list(l1)
+is.list(l2)
+l1; l2
+```
+
+Accessing lists is different that that of verctors:
+```{r, eval = FALSE}
+l1[[1]]
+l2[[2]][1]
+```
+
+### Matrices
+Matrix is two dimensional data structure for objects of the same type.
+
+```{r, eval = FALSE}
+m1 <- matrix(1:16, nrow = 4, ncol = 4)
+m1[3, 3]
+m1[3, ]
+m1[, 3]
+m1[2:3, 2:3]
+
+is.matrix(m1)
+```
+
+Matrices are very efficient in storing numerical data.
+
+### Data Frames
+Data Frames are very useful as a metaphor for data tables (like Excel datasheets).
+
+Mostly we become new dataframes while reading in data from external sources.
+But we can create dataframes ourselves:
+```{r, eval = FALSE}
+d1 <- data.frame(small_values = v2, bigger_values = v3)
+d1['biggest_values'] <- 45:48
+d1['letters'] <- c('a', 'b', 'c', 'd')
+d1[2, 1] <- 0.3
+d1$letters[2]
+d1[2, ]
+d1
+```
+
+Let's create some useful data frame:
+
+
+    POS       TokenFrequency  TypeFrequency	Class
+    ADJ	      421		          271		        open
+    ADV       337		          103		        open
+    N	        1411	          735		        open
+    KONJ      458		          18		        closed
+    PRAEP     455		          37		        closed
+
+
+```{r, eval = FALSE}
+pos <- c('ADJ', 'ADV', 'N', 'KONJ', 'PRAEP')
+
+token_freq <- c(421, 337, 1311, 458, 455)
+type_freq <- c(271, 103,735,  18, 37)
+class <- c('open', 'open', 'open', 'closed', 'closed')
+
+d2 <- data.frame(POS = pos, TokenFrequency = token_freq, TypeFrequency = type_freq, Class = class)
+
+```
+
+### Special values
+
+There are two very insteresting data types in R: `NULL` and `NA`.
+
+```{r, eval = FALSE}
+c(1, 2.1, T, NA, 4)
+c(1, 2, T, NA, 4)
+```
+
+
+### Closing notes
+`R` is an object oriented language with functional elements, so we can imagine plenty of different
+data-structures.
+
+Not mentioned here are `arrays`, `factors`, different data types etc.
+
+## Data manipulation
+The real power of `R` unfolds with the manipulation of tabular data.
+
+### Reading data
+We'll try to read in a data set from a `.csv` file:
+```{r, cache = TRUE}
+pause_times <- read.table('data/pauses.txt', header = T)
+head(pause_times)
+```
+
+### Writing data
+To write a dataframe into a file use:
+```{r, eval = FALSE}
+write.csv2(d2, file = 'data/d2.csv')
+write.table(d2, file = 'd2.tsv', sep = '\t')
+```
+
+### Subsetting data
+
+```{r samples, echo = TRUE, eval = FALSE}
+set.seed(1)
+d2[sample(length(d2$Class)), ]
+d2[sample(length(d2$Class)), ]
+```
+
+### Boolean Queries
+
+```{r boolean, echo = TRUE, eval = FALSE}
+subset(d2, d2$Klasse == 'open'   & d2$TokenFrequency > 100)
+subset(d2, d2$Klasse == 'closed' & d2$POS %in% c('KONJ', 'PRAEP'))
+```
+
+### Ordering and sorting
+
+```{r sort, echo = TRUE, eval = FALSE}
+v12 <- 1:100 # seq(1, 100, 1)
+v13 <- c(1, 4, 5, 3, 6, 9)
+sort(v13)
+sort(v13, TRUE)
+order(v13)
+```
+
+```{r ordering, echo = TRUE, eval = FALSE}
+d2[order(d2$TokenFrequency), ]
+```
+
+### Closing notes
+A convenient way to load standard datasets is the menu `Import Dataset`.
+
+You may be interested in SQL connectivity since many data sets are huge. Consider the package `sqldf`.
+
+Very useful are the modern packages for data manipulation like `dplyr`, `tidyr`.
+
+## Desctiptive Statistics
+
+```{r descriptive_measures, eval = FALSE}
+library(moments)
+
+random.vector <- rnorm(100)
+str(random.vector)
+summary(random.vector)
+mean(random.vector)
+median(random.vector)
+quantile(random.vector, c(0.25, 0.5, 0.75))
+sd(random.vector)
+var(random.vector)
+mad(random.vector)
+
+skewness(random.vector)
+kurtosis(random.vector)
+```
+
+### Closing notes
+You may be interested in SQL connectivity since many data sets are huge. Consider the package `sqldf`.
+
+## Graphical exploration 
+with base and ggplo2 systems
+
+### Frequency Distributions
+```{r table, echo = T, eval = FALSE}
+head(pause_times$FILLER)
+
+attach(pause_times)
+
+str(FILLER)
+
+table(FILLER)
+
+table(FILLER) / length(FILLER)
+
+prop.table(table(FILLER))
+
+cumsum(table(FILLER))
+
+detach(pause_times)
+```
+
+### Piecharts
+
+```{r piechart, echo = TRUE, eval = FALSE}
+pie(table(pause_times$FILLER))
+```
+
+
+### Barcharts
+
+```{r barplot, echo = T, eval = FALSE}
+barplot(table(pause_times$FILLER))
+barplot(table(pause_times$FILLER),
+        main = 'Our Barchart',
+        # ylim
+        # xlim
+        col = c('red', 'green', 'blue'),
+        names.arg = c('Aeh', 'Aehm', 'Silence')
+        )
+
+```
+
+
+### Histograms
+```{r hist, echo = T, eval = FALSE} 
+hist(pause_times$LENGTH, breaks = c(200,350, 800, 1600))
+hist(pause_times$LENGTH, freq = T)
+lines(density(pause_times$LENGTH))
+```
+
+```{r ggplot_hist, cache = T, eval = FALSE}
+library(ggplot2)
+qplot(pause_times$LENGTH, binwidth = 5)
+ggplot(pause_times, aes(x = LENGTH)) + geom_histogram(binwidth = 15, color = 'black', fill = 'white')
+ggplot(pause_times, aes(x = LENGTH)) + geom_density()
+```
+
+### Closing notes
+`R` has a long history of visualizing data and one of the most elaborated library collections
+for that. We have watched at the `base` and `ggplot2` plotting systems. Of interest are `lattice` and
+`grid` systems, which can be very useful in particular use cases.
+
+If you want to produce interactive graphics consider using the `ggvis` package or webservices
+like [Plotly](https://plot.ly/).
+
+## <a name="strings"></a>String Processing with R
+
+```{r, eval = FALSE}
+d2$POS <- tolower(d2$POS)
+d2$Class <- gsub('open', 'o', d2$Class)
+d2$Class <- substr(d2$Class, 1, 1)
+
+d2
+```
+
+### Closing notes
+If you want steadily preprocess your data and perform ETL tasks look at the `Stringr` package.
+
+## <a name="math"></a>Doing Math in R
+`R` hasn't been thougt primarily for mathematical calculations like e.g. `GNU Octave`,
+but you can find a lot of useful functions.
+
+### Arithmetics
+```{r, eval = FALSE}
+a <- 1
+b <- 2
+a + b
+a - b
+a * b
+a / b
+a ^ b
+5 %/% 2
+5 %% 2
+```
+
+### Sums and Products
+```{r, eval = FALSE}
+x <- 1:10
+sum(x)
+prod(x)
+factorial(length(x))
+```
+
+### Roots
+```{r, eval = FALSE}
+sqrt(4)
+8^(1/3)
+```
+
+### Log Functions
+
+```{r, eval = FALSE}
+pi
+exp(1)
+log(1, base = exp(1))
+log10(100)
+log2(8)
+```
+
+### Trigonometric Functions
+
+Measuring Angles in Radians:
+$$
+  \alpha^{\circ} = \frac{\pi}{180}\cdot \alpha \text{ rad} 
+$$
+
+```{r, eval = FALSE}
+pi
+sin((3/2)*pi)
+cos(0)
+cos(pi/3)
+tan(pi/4)
+```
+
+
+### Unions and Intersections
+```{r, eval = FALSE}
+union(1:10,5:7)
+intersect(1:10,5:7)
+```
+
+### Matrices
+```{r, eval = FALSE}
+A <- matrix(1:6, nrow = 2, ncol = 3, byrow = T)
+A
+t(A)
+```
+
+#### Matrix Addition
+```{r, eval = FALSE}
+B <- matrix(6:11, nrow = 2, ncol = 3, byrow = T)
+B
+A + B
+A - B
+```
+
+#### Matrix Multiplication
+```{r, eval = FALSE}
+A
+A * 2
+
+D <- matrix(6:11, nrow = 3, ncol = 2, byrow = T)
+A; D
+
+A %*% D
+```
+
+## User-defined functions
+```{r, eval = FALSE}
+seq_up_to <- function(x) {
+  seq(1, as.double(x))
+}
+
+seq_up_to(13)
+```
+
+### Closing notes
+Write your own functions whenever you feel comfortable with.
+
+## <a name="flow-control"></a>Flow control structures
+
+```{r, eval = FALSE}
+ifelse(d2$Class == 'c', 'Closed Class', 'Open Class')
+
+if (d2$Class == 'c') {
+  'Closed Class'
+} else {
+  'Open Class'
+}
+```
+
+```{r, eval = FALSE}
+
+for (fruit in c('Apple', 'Banana', 'Melone')) {
+  print(tolower(fruit))
+}
+
+```
+
+
+## Apply-family functions
+
+```{r, eval = FALSE}
+lapply(list(seq_up_to(100), seq_up_to(1000), seq_up_to(10000)), sum)
+```
+
+
+### Closing notes
+Use apply functions everywhere instead of loops since verctorization in R works much faster.
+
+## <a name="further-readings"></a>Where to go from here
+
+The primary source of information should be the official documentation:
+
+- https://www.r-project.org/
+- https://cran.r-project.org/web/views/
+
+Some online resources are well grounded and useful:
+
+- https://github.com/qinwf/awesome-R
+- http://adv-r.had.co.nz/Style.html
+
+If you were interested in the topics of the current presentation you may want to read ahead.
+Some sources will help you to master the R Language and it's ecosystem:
+
+- Horton, Nicholas J., and Ken Kleinman. Using R and RStudio for Data Management, Statistical Analysis, and Graphics. 2nd ed. Boca Raton, FL: CRC Press, Taylor & Francis Group, 2015.
+- Matloff, Norman. The Art of R Programming: A Tour of Statistical Software Design. 1st ed. No Starch Press, 2011.
+- Verzani, John. Using R for Introductory Statistics. Boca Raton: Chapman & Hall/CRC, 2005. 
+- Wickham, Hadley. Advanced R. The R Series. Boca Raton, FL: CRC Press, Taylor & Francis Group, 2015.
+- Wickham, Hadley. ggplot2: Elegant Graphics for Data Analysis. Use R! Springer Science   Business Media, 2009.
+
